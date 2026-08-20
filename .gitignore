@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

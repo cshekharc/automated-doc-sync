@@ -1,0 +1,56 @@
+# Workflow 2 — Publish Confluence Drafts
+#
+# Triggered when a doc-sync pull request (branch matching docs/sync-*) is
+# merged.  Reads the merged PR body, extracts the doc-sync-meta block written
+# by Workflow 1, and publishes every Confluence draft page listed there by
+# issuing a PUT /wiki/api/v2/pages/{id} with status "current".
+#
+# All sensitive values are sourced exclusively from GitHub Actions secrets or
+# built-in github.* context expressions.  No secrets are written inline.
+
+name: doc-sync-publish
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  publish-confluence-drafts:
+    name: Publish Confluence Drafts
+    runs-on: ubuntu-latest
+    # Only run when the PR was actually merged from a docs/sync-* branch.
+    # NOTE: `branches` under pull_request filters the BASE branch, not HEAD.
+    # Use startsWith(github.head_ref, ...) to filter on the HEAD branch instead.
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'docs/sync-')
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install, build, and publish Confluence drafts
+        env:
+          # GITHUB_TOKEN: GitHub API authentication token for Octokit
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_REPOSITORY: repository slug "owner/repo"
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # GITHUB_PR_NUMBER: integer number of the merged pull request
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          # CONFLUENCE_BASE_URL: Confluence Cloud base URL (e.g. https://example.atlassian.net)
+          CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
+          # CONFLUENCE_API_TOKEN: Atlassian Cloud API token used for Basic auth
+          CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          # CONFLUENCE_PAGE_ID: optional additional page ID for the allowlist (W-2)
+          CONFLUENCE_PAGE_ID: ${{ secrets.CONFLUENCE_PAGE_ID }}
+          # CONFLUENCE_REQUEST_TIMEOUT_MS: timeout in ms for each Confluence API call (optional)
+          CONFLUENCE_REQUEST_TIMEOUT_MS: ${{ secrets.CONFLUENCE_REQUEST_TIMEOUT_MS }}
+        run: npm ci && npm run build && node dist/confluence-publish.js

@@ -1,0 +1,35 @@
+{
+  "name": "automated-doc-sync",
+  "version": "0.1.0",
+  "description": "Agentic pipeline that detects drift between TypeScript source code and published documentation, regenerates stale sections, and opens a PR for human review.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "vitest run --passWithNoTests test/e2e",
+    "lint": "eslint src --ext .ts --max-warnings 0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.1.1",
+    "axios": "^1.7.2",
+    "glob": "^10.4.5",
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "simple-git": "^3.25.0",
+    "ts-morph": "^22.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-jsdoc": "^50.2.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

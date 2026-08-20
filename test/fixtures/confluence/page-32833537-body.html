@@ -1,0 +1,62 @@
+<!-- Confluence storage-format XHTML body for page 32833537
+     Source: epam-team-test-csc.atlassian.net/wiki
+     NOTE: The live Confluence REST API was inaccessible during T-09 (HTTP 403
+     returned for all requests including anonymous access, indicating a server-side
+     Confluence product-license restriction). This fixture represents authentic
+     Confluence Cloud storage-format XHTML structure, generated from the known
+     shape of the target page, and is used to validate heading-extraction logic
+     in T-10.  No credentials appear in this file. -->
+<p>This page documents the core exported functions of the <strong>automated-doc-sync</strong> pipeline. Each section describes one exported TypeScript function: its signature, parameters, and purpose.</p>
+<h2>detectDrift</h2>
+<p>Detects which exported TypeScript functions have been added or modified compared to the previous commit. Runs <code>git diff GITHUB_SHA^1 GITHUB_SHA</code> via <em>simple-git</em>, compares base and head versions of each changed file using two in-memory <em>ts-morph</em> <code>SourceFile</code> objects, and returns one <code>ExportedFunction</code> entry per changed function.</p>
+<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+  <ac:parameter ac:name="language">typescript</ac:parameter>
+  <ac:parameter ac:name="title">detectDrift signature</ac:parameter>
+  <ac:plain-text-body><![CDATA[export async function detectDrift(
+  changedFilePaths: string[],
+  sha: string
+): Promise<ExportedFunction[]>]]></ac:plain-text-body>
+</ac:structured-macro>
+<p><strong>Parameters</strong></p>
+<ul>
+  <li><code>changedFilePaths</code> — list of repo-relative file paths that changed in the triggering commit</li>
+  <li><code>sha</code> — the merge commit SHA (<code>GITHUB_SHA</code>) used to identify base and head versions</li>
+</ul>
+<h2>compareDrift</h2>
+<p>Compares a single exported function against its existing documentation section and classifies the relationship as <code>&#39;current&#39;</code>, <code>&#39;stale&#39;</code>, or <code>&#39;not-found&#39;</code>. The comparison is performed on normalised whitespace so minor formatting differences do not trigger false-positive drift.</p>
+<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="b2c3d4e5-f6a7-8901-bcde-f12345678901">
+  <ac:parameter ac:name="language">typescript</ac:parameter>
+  <ac:parameter ac:name="title">compareDrift signature</ac:parameter>
+  <ac:plain-text-body><![CDATA[export function compareDrift(
+  fn: ExportedFunction,
+  section: DocSection
+): ComparisonResult]]></ac:plain-text-body>
+</ac:structured-macro>
+<p><strong>Returns</strong></p>
+<ul>
+  <li><code>&#39;current&#39;</code> — section content matches the canonical rendering of the function</li>
+  <li><code>&#39;stale&#39;</code> — section exists but the signature or JSDoc body differs</li>
+  <li><code>&#39;not-found&#39;</code> — no matching heading was found in any documentation target</li>
+</ul>
+<h2>locateMarkdownSection</h2>
+<p>Locates the documentation section for a given function name by searching every Markdown file that matches the supplied glob pattern. Each file is parsed with <em>remark</em> into an mdast AST and the first <code>##</code>-level heading whose text exactly matches <code>functionName</code> is treated as the section start.</p>
+<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="c3d4e5f6-a7b8-9012-cdef-123456789012">
+  <ac:parameter ac:name="language">typescript</ac:parameter>
+  <ac:parameter ac:name="title">locateMarkdownSection signature</ac:parameter>
+  <ac:plain-text-body><![CDATA[export async function locateMarkdownSection(
+  functionName: string,
+  docsGlob?: string
+): Promise<DocSection>]]></ac:plain-text-body>
+</ac:structured-macro>
+<h2>redactSecrets</h2>
+<p>Applies six regex-based redaction patterns to the input string, replacing any matched secret values with the literal string <code>[REDACTED]</code>. Patterns cover GitHub tokens (<code>ghp_</code>, <code>ghs_</code>, <code>github_pat_</code>), Atlassian API tokens, Bearer tokens, and long Base64 blobs. Strings containing no secrets are returned byte-for-byte unchanged.</p>
+<ac:structured-macro ac:name="code" ac:schema-version="1" ac:macro-id="d4e5f6a7-b8c9-0123-defa-234567890123">
+  <ac:parameter ac:name="language">typescript</ac:parameter>
+  <ac:parameter ac:name="title">redactSecrets signature</ac:parameter>
+  <ac:plain-text-body><![CDATA[export function redactSecrets(text: string): string]]></ac:plain-text-body>
+</ac:structured-macro>
+<ac:structured-macro ac:name="info" ac:schema-version="1" ac:macro-id="e5f6a7b8-c9d0-1234-efab-345678901234">
+  <ac:rich-text-body>
+    <p>All output strings written to <code>process.stdout</code> pass through <code>redactSecrets</code> before being emitted, including structured JSON error fields. See architecture §8.5 for the full list of patterns.</p>
+  </ac:rich-text-body>
+</ac:structured-macro>

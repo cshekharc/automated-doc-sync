@@ -1,0 +1,57 @@
+name: doc-sync
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  sync-docs:
+    name: Detect drift and open documentation sync PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.merged == true
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    env:
+      # GITHUB_TOKEN is automatically provided by GitHub Actions; the secret
+      # reference here allows it to be overridden and ensures it is available
+      # to @octokit/rest and the gh CLI inside the pipeline.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # CONFLUENCE_BASE_URL: base URL of the target Confluence Cloud instance
+      # (e.g., https://yourorg.atlassian.net)
+      CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
+      # CONFLUENCE_API_TOKEN: Confluence Cloud API token (Atlassian account token)
+      # Never log or echo this value — redactSecrets is applied inside pipeline.ts
+      CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
+      # CONFLUENCE_PAGE_ID: numeric ID of the Confluence page to sync
+      CONFLUENCE_PAGE_ID: ${{ secrets.CONFLUENCE_PAGE_ID }}
+      # CONFLUENCE_REQUEST_TIMEOUT_MS: optional; overrides the 30 000 ms default
+      # axios timeout used when calling the Confluence API
+      CONFLUENCE_REQUEST_TIMEOUT_MS: ${{ secrets.CONFLUENCE_REQUEST_TIMEOUT_MS }}
+      # GITHUB_REQUEST_TIMEOUT_MS: optional; overrides the 30 000 ms default
+      # axios/Octokit timeout used when calling the GitHub API
+      GITHUB_REQUEST_TIMEOUT_MS: ${{ secrets.GITHUB_REQUEST_TIMEOUT_MS }}
+      # DOCS_DEFAULT_FILE: optional; overrides the fallback docs file path used
+      # by DocLocator when no derived path exists (e.g., docs/api.md)
+      DOCS_DEFAULT_FILE: ${{ secrets.DOCS_DEFAULT_FILE }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 is required so that GITHUB_SHA^1 is available for
+          # git diff in DriftDetector (F-4)
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies, build, and run pipeline
+        run: npm ci && npm run build && node dist/pipeline.js

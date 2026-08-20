@@ -1,0 +1,11 @@
+{
+  "_comment": "Metadata for the Confluence storage-format fixture. headingLevel is the HTML element used for function-name headings. expectedFunctionNames lists every heading text at that level present in page-32833537-body.html so T-10 tests can assert against known values without hard-coding them in test source.",
+  "pageId": "32833537",
+  "headingLevel": "h2",
+  "expectedFunctionNames": [
+    "detectDrift",
+    "compareDrift",
+    "locateMarkdownSection",
+    "redactSecrets"
+  ]
+}
