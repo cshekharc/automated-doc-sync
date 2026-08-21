@@ -35,6 +35,7 @@ import { join } from 'path';
 import axios from 'axios';
 import { Octokit } from '@octokit/rest';
 import { redactSecrets } from './utils/redact-secrets.js';
+import { buildConfluenceAuthHeader } from './utils/confluence-auth.js';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -209,13 +210,14 @@ export async function publishConfluenceDrafts(): Promise<void> {
 
   // CONFLUENCE_BASE_URL: Confluence Cloud base URL
   const baseUrl = (process.env['CONFLUENCE_BASE_URL'] ?? '').replace(/\/$/, '');
-  // CONFLUENCE_API_TOKEN: Atlassian Cloud API token for Basic auth (never logged)
-  const apiToken = process.env['CONFLUENCE_API_TOKEN'] ?? '';
   // CONFLUENCE_REQUEST_TIMEOUT_MS: timeout in ms for each Confluence API call
   const timeoutMs = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
 
-  // Atlassian headless-auth format: Basic base64(":" + token)
-  const authHeader = `Basic ${Buffer.from(`:${apiToken}`).toString('base64')}`;
+  // CONFLUENCE_USERNAME + CONFLUENCE_API_TOKEN: encoded via shared utility; never logged (NFR-2)
+  const authHeader = buildConfluenceAuthHeader(
+    process.env['CONFLUENCE_USERNAME'] ?? '',
+    process.env['CONFLUENCE_API_TOKEN'] ?? '',
+  );
 
   for (const pageId of confluenceDrafts) {
     // W-2: allowlist check — skip any page ID not in the configured set

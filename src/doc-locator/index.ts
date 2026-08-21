@@ -15,6 +15,7 @@ import * as path from 'node:path';
 import axios from 'axios';
 import type { Heading, Root, PhrasingContent } from 'mdast';
 import type { DocSection } from '../types.js';
+import { buildConfluenceAuthHeader } from '../utils/confluence-auth.js';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -295,18 +296,19 @@ export async function locateConfluenceSection(
 
   // CONFLUENCE_BASE_URL — base URL of the Confluence instance
   const baseUrl = process.env['CONFLUENCE_BASE_URL'] ?? '';
-  // CONFLUENCE_API_TOKEN — Basic auth credential; never logged (NFR-2)
-  const token = process.env['CONFLUENCE_API_TOKEN'] ?? '';
   // CONFLUENCE_REQUEST_TIMEOUT_MS — HTTP timeout in milliseconds; default 30 000
   const timeout = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
 
-  // Basic auth with empty username: base64(":" + token)
-  const auth = Buffer.from(':' + token).toString('base64');
+  // CONFLUENCE_USERNAME + CONFLUENCE_API_TOKEN — never logged (NFR-2); encoded via shared utility
+  const authHeader = buildConfluenceAuthHeader(
+    process.env['CONFLUENCE_USERNAME'] ?? '',
+    process.env['CONFLUENCE_API_TOKEN'] ?? '',
+  );
 
   const response = await axios.get(
     `${baseUrl}/api/v2/pages/${pageId}?body-format=storage`,
     {
-      headers: { Authorization: `Basic ${auth}` },
+      headers: { Authorization: authHeader },
       timeout,
     },
   );

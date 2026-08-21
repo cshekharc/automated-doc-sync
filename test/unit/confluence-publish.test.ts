@@ -77,6 +77,7 @@ const MANAGED_ENV_VARS = [
   'GITHUB_REPOSITORY',
   'GITHUB_PR_NUMBER',
   'CONFLUENCE_BASE_URL',
+  'CONFLUENCE_USERNAME',
   'CONFLUENCE_API_TOKEN',
   'CONFLUENCE_PAGE_ID',
   'CONFLUENCE_REQUEST_TIMEOUT_MS',
@@ -127,6 +128,7 @@ beforeEach(() => {
   process.env['GITHUB_REPOSITORY'] = 'testowner/testrepo';
   process.env['GITHUB_PR_NUMBER'] = '42';
   process.env['CONFLUENCE_BASE_URL'] = 'https://example.atlassian.net';
+  process.env['CONFLUENCE_USERNAME'] = 'test@example.com';
   process.env['CONFLUENCE_API_TOKEN'] = 'test-api-token-not-a-real-secret';
   process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] = '5000';
 
@@ -469,7 +471,7 @@ describe('Scenario 5 — CONFLUENCE_API_TOKEN never appears in log output', () =
     });
     // Simulate Confluence GET failure with a message containing the token
     mockAxiosGet.mockRejectedValue(
-      new Error(`Request failed: Authorization: Basic ${Buffer.from(`:${sensitiveToken}`).toString('base64')}`),
+      new Error(`Request failed: Authorization: Basic ${Buffer.from(`test@example.com:${sensitiveToken}`).toString('base64')}`),
     );
 
     await publishConfluenceDrafts();
