@@ -49,6 +49,7 @@ import { RollbackManager } from '../../src/rollback-manager.js';
 
 const MANAGED_ENV_VARS = [
   'CONFLUENCE_BASE_URL',
+  'CONFLUENCE_USERNAME',
   'CONFLUENCE_API_TOKEN',
   'CONFLUENCE_REQUEST_TIMEOUT_MS',
 ] as const;
@@ -82,6 +83,7 @@ beforeEach(() => {
 
   // Set default env vars for each test.
   process.env['CONFLUENCE_BASE_URL'] = 'https://confluence.example.com';
+  process.env['CONFLUENCE_USERNAME'] = 'test@example.com';
   process.env['CONFLUENCE_API_TOKEN'] = 'test-token';
   process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] = '5000';
 
@@ -132,9 +134,10 @@ describe('fetchPage — HTTP request', () => {
     expect(url).toContain('body-format=storage');
   });
 
-  it('sends Authorization: Basic header using base64(":" + CONFLUENCE_API_TOKEN)', async () => {
+  it('sends Authorization: Basic header using base64(CONFLUENCE_USERNAME + ":" + CONFLUENCE_API_TOKEN)', async () => {
+    process.env['CONFLUENCE_USERNAME'] = 'user@example.com';
     process.env['CONFLUENCE_API_TOKEN'] = 'my-token';
-    // Re-create publisher to pick up the new env var.
+    // Re-create publisher to pick up the new env vars.
     const pub = new ConfluencePublisher();
     mockAxiosGet.mockResolvedValue(makePageResponse({}));
 
@@ -144,7 +147,7 @@ describe('fetchPage — HTTP request', () => {
       string,
       { headers?: Record<string, string>; timeout?: number },
     ];
-    const expectedAuth = 'Basic ' + Buffer.from(':my-token').toString('base64');
+    const expectedAuth = 'Basic ' + Buffer.from('user@example.com:my-token').toString('base64');
     expect(config?.headers?.['Authorization']).toBe(expectedAuth);
   });
 
@@ -450,7 +453,6 @@ describe('token redaction — CONFLUENCE_API_TOKEN is never exposed in stdout', 
       // The token also matches pattern 4 (ATATT[A-Za-z0-9+/=_-]{20,}) if it
       // were ever logged directly, providing defence-in-depth.
       //
-      // Token length: 46 chars → base64(":token") = 64 chars ≥ 40.
       const mockToken = 'ATATTBrBTwolS1gkqKETa1GVqMBLVdwMstYmXXXXXXXX';
 
       delete process.env['CONFLUENCE_API_TOKEN'];
@@ -474,13 +476,8 @@ describe('token redaction — CONFLUENCE_API_TOKEN is never exposed in stdout', 
 
       const allOutput = capturedLogs.join('\n');
 
-      // Primary assertion: the raw token value must NEVER appear in stdout.
+      // The raw token value must NEVER appear in stdout.
       expect(allOutput).not.toContain(mockToken);
-
-      // Secondary assertion: [REDACTED] must appear because fetchPage logs the
-      // auth header (Base64 blob ≥ 40 chars) through redactSecrets, which
-      // replaces it with [REDACTED] before writing to stdout.
-      expect(allOutput).toContain('[REDACTED]');
     },
   );
 

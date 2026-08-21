@@ -299,8 +299,11 @@ export async function locateConfluenceSection(
   // CONFLUENCE_REQUEST_TIMEOUT_MS — HTTP timeout in milliseconds; default 30 000
   const timeout = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
 
-  // CONFLUENCE_API_TOKEN — never logged (NFR-2); encoded via shared utility
-  const authHeader = buildConfluenceAuthHeader(process.env['CONFLUENCE_API_TOKEN'] ?? '');
+  // CONFLUENCE_USERNAME + CONFLUENCE_API_TOKEN — never logged (NFR-2); encoded via shared utility
+  const authHeader = buildConfluenceAuthHeader(
+    process.env['CONFLUENCE_USERNAME'] ?? '',
+    process.env['CONFLUENCE_API_TOKEN'] ?? '',
+  );
 
   const response = await axios.get(
     `${baseUrl}/api/v2/pages/${pageId}?body-format=storage`,

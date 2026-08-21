@@ -58,9 +58,10 @@ export class ConfluencePublisher {
 
   /**
    * Pre-built `Authorization: Basic` header value.
-   * Computed once in the constructor from `CONFLUENCE_API_TOKEN` via
-   * {@link buildConfluenceAuthHeader}; reused on every request so the
-   * Base64 encoding is not repeated per call.  Never logged (NFR-2).
+   * Computed once in the constructor from `CONFLUENCE_USERNAME` and
+   * `CONFLUENCE_API_TOKEN` via {@link buildConfluenceAuthHeader}; reused on
+   * every request so the Base64 encoding is not repeated per call.
+   * Never logged (NFR-2).
    */
   private readonly authHeader: string;
 
@@ -82,8 +83,11 @@ export class ConfluencePublisher {
   constructor() {
     // CONFLUENCE_BASE_URL: base URL of the Confluence instance
     this.baseUrl = process.env['CONFLUENCE_BASE_URL'] ?? '';
-    // CONFLUENCE_API_TOKEN: API token encoded once at construction (NFR-2)
-    this.authHeader = buildConfluenceAuthHeader(process.env['CONFLUENCE_API_TOKEN'] ?? '');
+    // CONFLUENCE_USERNAME + CONFLUENCE_API_TOKEN: encoded once at construction (NFR-2)
+    this.authHeader = buildConfluenceAuthHeader(
+      process.env['CONFLUENCE_USERNAME'] ?? '',
+      process.env['CONFLUENCE_API_TOKEN'] ?? '',
+    );
     // CONFLUENCE_REQUEST_TIMEOUT_MS: HTTP request timeout in milliseconds; default 30000
     this.timeout = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
   }

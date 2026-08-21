@@ -213,8 +213,11 @@ export async function publishConfluenceDrafts(): Promise<void> {
   // CONFLUENCE_REQUEST_TIMEOUT_MS: timeout in ms for each Confluence API call
   const timeoutMs = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
 
-  // CONFLUENCE_API_TOKEN: encoded once via shared utility; never logged (NFR-2)
-  const authHeader = buildConfluenceAuthHeader(process.env['CONFLUENCE_API_TOKEN'] ?? '');
+  // CONFLUENCE_USERNAME + CONFLUENCE_API_TOKEN: encoded via shared utility; never logged (NFR-2)
+  const authHeader = buildConfluenceAuthHeader(
+    process.env['CONFLUENCE_USERNAME'] ?? '',
+    process.env['CONFLUENCE_API_TOKEN'] ?? '',
+  );
 
   for (const pageId of confluenceDrafts) {
     // W-2: allowlist check — skip any page ID not in the configured set

@@ -57,6 +57,7 @@ const FIXTURE_DIR = resolve(__dirname, '../fixtures/confluence');
 const MANAGED_ENV_VARS = [
   'CONFLUENCE_PAGE_ID',
   'CONFLUENCE_BASE_URL',
+  'CONFLUENCE_USERNAME',
   'CONFLUENCE_API_TOKEN',
   'CONFLUENCE_REQUEST_TIMEOUT_MS',
   'CONFLUENCE_HEADING_LEVEL',
@@ -166,9 +167,10 @@ describe('locateConfluenceSection — page ID from env var', () => {
     expect(url).toContain('body-format=storage');
   });
 
-  it('sends Authorization header with Basic base64(":" + token)', async () => {
+  it('sends Authorization header with Basic base64(CONFLUENCE_USERNAME + ":" + token)', async () => {
     process.env['CONFLUENCE_PAGE_ID'] = 'page-xyz';
     process.env['CONFLUENCE_BASE_URL'] = 'https://confluence.example.com';
+    process.env['CONFLUENCE_USERNAME'] = 'user@example.com';
     process.env['CONFLUENCE_API_TOKEN'] = 'my-secret-token';
 
     mockAxiosGet.mockResolvedValue(makeMockPageResponse({ bodyXhtml: '<h2>fn</h2>' }));
@@ -176,7 +178,7 @@ describe('locateConfluenceSection — page ID from env var', () => {
     await locateConfluenceSection('fn', 'src/unknown/file.ts');
 
     const [, config] = mockAxiosGet.mock.calls[0] as [string, { headers?: Record<string, string>; timeout?: number }];
-    const expectedAuth = 'Basic ' + Buffer.from(':my-secret-token').toString('base64');
+    const expectedAuth = 'Basic ' + Buffer.from('user@example.com:my-secret-token').toString('base64');
     expect(config?.headers?.['Authorization']).toBe(expectedAuth);
   });
 
