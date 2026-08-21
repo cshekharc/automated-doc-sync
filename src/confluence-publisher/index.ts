@@ -31,6 +31,7 @@
 import axios from 'axios';
 import type { RollbackManager } from '../rollback-manager.js';
 import { redactSecrets } from '../utils/redact-secrets.js';
+import { buildConfluenceAuthHeader } from '../utils/confluence-auth.js';
 
 /**
  * Publishes documentation changes to Confluence as unpublished drafts and
@@ -56,10 +57,12 @@ export class ConfluencePublisher {
   private readonly baseUrl: string;
 
   /**
-   * API token used for Basic auth: `Authorization: Basic <base64(":" + token)>`.
-   * Sourced from `CONFLUENCE_API_TOKEN`; **never logged or written to files** (NFR-2).
+   * Pre-built `Authorization: Basic` header value.
+   * Computed once in the constructor from `CONFLUENCE_API_TOKEN` via
+   * {@link buildConfluenceAuthHeader}; reused on every request so the
+   * Base64 encoding is not repeated per call.  Never logged (NFR-2).
    */
-  private readonly token: string;
+  private readonly authHeader: string;
 
   /**
    * HTTP request timeout in milliseconds applied to every axios call (F-10).
@@ -79,25 +82,10 @@ export class ConfluencePublisher {
   constructor() {
     // CONFLUENCE_BASE_URL: base URL of the Confluence instance
     this.baseUrl = process.env['CONFLUENCE_BASE_URL'] ?? '';
-    // CONFLUENCE_API_TOKEN: API token for Basic auth; never logged (NFR-2)
-    this.token = process.env['CONFLUENCE_API_TOKEN'] ?? '';
+    // CONFLUENCE_API_TOKEN: API token encoded once at construction (NFR-2)
+    this.authHeader = buildConfluenceAuthHeader(process.env['CONFLUENCE_API_TOKEN'] ?? '');
     // CONFLUENCE_REQUEST_TIMEOUT_MS: HTTP request timeout in milliseconds; default 30000
     this.timeout = parseInt(process.env['CONFLUENCE_REQUEST_TIMEOUT_MS'] ?? '30000', 10);
-  }
-
-  /**
-   * Builds the `Authorization: Basic` header value for the configured token.
-   *
-   * Atlassian headless-auth format: `base64(":" + token)` (empty username,
-   * token as the password field).  The returned string contains the Base64
-   * blob which **must** be passed through {@link redactSecrets} before any
-   * logging to prevent token leakage (NFR-2).
-   *
-   * @returns `"Basic <base64(\":\" + CONFLUENCE_API_TOKEN)>"`
-   */
-  private buildAuthHeader(): string {
-    const encoded = Buffer.from(':' + this.token).toString('base64');
-    return `Basic ${encoded}`;
   }
 
   /**
@@ -118,21 +106,16 @@ export class ConfluencePublisher {
    *   - `title`   — page title.
    */
   async fetchPage(pageId: string): Promise<{ body: string; version: number; title: string }> {
-    const authHeader = this.buildAuthHeader();
-
-    // Log the outgoing request; pass auth header through redactSecrets so the
-    // Base64 blob (≥ 40 chars) is replaced with [REDACTED] before stdout (NFR-2).
     console.log(
       redactSecrets(
-        `[ConfluencePublisher] GET ${this.baseUrl}/api/v2/pages/${pageId}?body-format=storage` +
-          ` auth=${authHeader}`,
+        `[ConfluencePublisher] GET ${this.baseUrl}/api/v2/pages/${pageId}?body-format=storage`,
       ),
     );
 
     const response = await axios.get(
       `${this.baseUrl}/api/v2/pages/${pageId}?body-format=storage`,
       {
-        headers: { Authorization: authHeader },
+        headers: { Authorization: this.authHeader },
         timeout: this.timeout,
       },
     );
@@ -230,7 +213,7 @@ export class ConfluencePublisher {
       },
       {
         headers: {
-          Authorization: this.buildAuthHeader(),
+          Authorization: this.authHeader,
           'Content-Type': 'application/json',
         },
         timeout: this.timeout,
@@ -286,7 +269,7 @@ export class ConfluencePublisher {
       },
       {
         headers: {
-          Authorization: this.buildAuthHeader(),
+          Authorization: this.authHeader,
           'Content-Type': 'application/json',
         },
         timeout: this.timeout,
